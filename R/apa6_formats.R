@@ -36,6 +36,7 @@ apa6_pdf <- function(
   , keep_tex = TRUE
   , md_extensions = NULL
   , includes = NULL
+  , latex_engine = "xelatex"
   , ...
 ) {
   validate(fig_caption, check_class = "logical", check_length = 1)
@@ -69,6 +70,7 @@ apa6_pdf <- function(
     , keep_tex = keep_tex
     , md_extensions = md_extensions
     , includes = includes
+    , latex_engine = latex_engine
     , ...
   )
 

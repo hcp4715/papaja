@@ -63,3 +63,66 @@
   }
 {}{\PatchFailed}
 \makeatother
+
+% ============================================
+% 中文本地化配置 (papaja-zh)
+% ============================================
+
+% 加载 ctex 包（中文支持）
+\usepackage{ctex}
+
+% 覆盖 apa6 的英文标签
+% 使用 \AtBeginDocument 确保在 english 选项初始化之后执行
+\AtBeginDocument{
+  \renewcommand{\abstractname}{摘要}
+  \renewcommand{\keywordname}{关键词}
+  \renewcommand{\rheadname}{短标题}
+  \renewcommand{\acksname}{作者简介}
+  \renewcommand{\figurename}{图}
+  \renewcommand{\tablename}{表}
+}
+
+% ============================================
+% 双语支持配置 (papaja-zh)
+% ============================================
+
+% 定义存储英文内容的宏
+\makeatletter
+\newcommand{\@titleen}{}
+\newcommand{\@abstracten}{}
+\newcommand{\@keywordsen}{}
+
+% 提供用户可调用的设置命令
+\newcommand{\titleen}[1]{\gdef\@titleen{#1}}
+\newcommand{\abstracten}[1]{\gdef\@abstracten{#1}}
+\newcommand{\keywordsen}[1]{\gdef\@keywordsen{#1}}
+\makeatother
+
+% 重定义 \maketitle，在中文摘要后追加英文摘要页
+% 注意：英文内容的宏定义由 Lua 过滤器生成，经 post_processor 移动到 preamble
+\makeatletter
+\let\oldmaketitle\maketitle
+\renewcommand{\maketitle}{%
+  \oldmaketitle%
+  % 仅当存在英文摘要时才插入英文页
+  \ifx\@abstracten\@empty\else%
+    \newpage%
+    % 英文标题（如有）
+    \ifx\@titleen\@empty\else%
+      \begin{center}%
+        \textbf{\@titleen}%
+      \end{center}%
+      \vspace{0.5cm}%
+    \fi%
+    % 英文摘要
+    {\section*{\normalfont\normalsize Abstract}}%
+    \begin{quote}%
+      \@abstracten%
+    \end{quote}%
+    % 英文关键词
+    \ifx\@keywordsen\@empty\else%
+      \indent\textit{Keywords:} \@keywordsen%
+    \fi%
+  \fi%
+}
+\makeatother

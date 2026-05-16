@@ -150,18 +150,16 @@ local function create_equal_contributors(authors)
     equal_contributors_inline = List:new{}
   else
     if #equal_contributors < #authors then
-      equal_contributors_inline = create_authors_inlines(equal_contributors, "and", false)
+      equal_contributors_inline = create_authors_inlines(equal_contributors, "和", false)
     else
-      equal_contributors_inline = List:new{pandoc.Str"All", pandoc.Space(), pandoc.Str"authors"}
+      equal_contributors_inline = List:new{pandoc.Str"所有作者"}
     end
   end
 
   local contribution_line
   if #equal_contributors > 0 then
     contribution_line = List:new{
-      pandoc.Space(), pandoc.Str"contributed", pandoc.Space(), pandoc.Str"equally",
-      pandoc.Space(), pandoc.Str"to", pandoc.Space(), pandoc.Str"this", pandoc.Space(),
-      pandoc.Str"work", pandoc.Str".", pandoc.Space()
+      pandoc.Space(), pandoc.Str"对本工作贡献相同", pandoc.Str"。", pandoc.Space()
     }
   else
     contribution_line = List:new{}
@@ -177,10 +175,7 @@ local function create_roles(authors)
 
   authors_roles:extend(
     List:new{
-      pandoc.Str "The", pandoc.Space(), pandoc.Str "authors", pandoc.Space(),
-      pandoc.Str "made", pandoc.Space(), pandoc.Str "the", pandoc.Space(),
-      pandoc.Str "following", pandoc.Space(), pandoc.Str "contributions",
-      pandoc.Str ".", pandoc.Space()
+      pandoc.Str "作者贡献如下。", pandoc.Space()
     }
   )
 
@@ -219,7 +214,7 @@ local function create_correspondence(authors)
       end
       local email = List:new{pandoc.Str ""}
       if author.email ~= nil then
-        email = List:new{pandoc.Space(), pandoc.Str "E-mail:", pandoc.Space()} ..
+        email = List:new{pandoc.Space(), pandoc.Str "电子邮件：", pandoc.Space()} ..
           author.email
       end
       contact_info = List:new(author.name .. address .. List:new{pandoc.Str "."} .. email)
@@ -234,10 +229,7 @@ local function create_correspondence(authors)
   local correspondence_line
   if corresponding_authors > 0 then
     correspondence_line = List:new{
-      pandoc.Str"Correspondence", pandoc.Space(), pandoc.Str"concerning", pandoc.Space(),
-      pandoc.Str"this", pandoc.Space(), pandoc.Str"article", pandoc.Space(),
-      pandoc.Str"should", pandoc.Space(), pandoc.Str"be", pandoc.Space(),
-      pandoc.Str"addressed", pandoc.Space(), pandoc.Str"to", pandoc.Space()
+      pandoc.Str"本文通讯作者：", pandoc.Space()
     }
   else
     contact_info = List:new{}
@@ -345,7 +337,7 @@ function Pandoc (document)
   -- end
 
   if meta.shorttitle == nil or meta.shorttitle[1] == nil then
-    meta.shorttitle = pandoc.MetaInlines(List:new{pandoc.Str"SHORT", pandoc.Space(), pandoc.Str"TITLE"})
+    meta.shorttitle = pandoc.MetaInlines(List:new{pandoc.Str"短标题"})
   end
 
   -- Append additional Latex environments
@@ -396,10 +388,27 @@ function Pandoc (document)
     blocks:extend(make_latex_envir("leftheader", meta.leftheader))
   end
 
+  -- ============================================
+  -- 双语支持 (papaja-zh)
+  -- ============================================
+  -- 生成英文内容的 LaTeX 宏定义，放在 papaja Lua-filter additions 区域内
+  -- post_processor 会自动将它们移动到 preamble 中
+  if meta.abstract_en and meta.abstract_en[1] then
+    if meta.title_en and meta.title_en[1] then
+      blocks:extend(make_latex_envir("titleen", meta.title_en))
+    end
+    blocks:extend(make_latex_envir("abstracten", meta.abstract_en))
+    if meta.keywords_en and meta.keywords_en[1] then
+      blocks:extend(make_latex_envir("keywordsen", pandoc.MetaBlocks(List:new{
+        pandoc.Para(meta.keywords_en)
+      })))
+    end
+  end
+
   blocks:extend(List:new{pandoc.Para({pandoc.RawInline("latex", "% End of papaja Lua-filter additions")})})
 
   if meta.author ~= nil then
-    meta.author = pandoc.MetaInlines(create_authors_inlines(meta.author, "&", true))
+    meta.author = pandoc.MetaInlines(create_authors_inlines(meta.author, "和", true))
   else
     meta.author = FORMAT == "latex"
       and pandoc.MetaInlines({pandoc.RawInline("latex", "\\phantom{0}")})
