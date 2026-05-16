@@ -161,6 +161,88 @@ apa6_pdf <- function(
     on.exit(close(output_file_connection))
     writeLines(output_text, output_file_connection, useBytes = TRUE)
 
+    # Reorder references: Chinese first, then English
+    # Chinese references are sorted by pinyin initial of surname
+    # Chinese author separators use comma instead of &
+    reorder_references <- function(tex_file) {
+      lines <- readLines(tex_file, encoding = "UTF-8")
+      
+      csl_start <- which(grepl("\\\\begin\\{CSLReferences\\}", lines))
+      csl_end <- which(grepl("\\\\end\\{CSLReferences\\}", lines))
+      
+      if (length(csl_start) == 0 || length(csl_end) == 0) {
+        return(invisible(NULL))
+      }
+      
+      before <- lines[1:csl_start]
+      after <- lines[csl_end:length(lines)]
+      ref_lines <- lines[(csl_start + 1):(csl_end - 1)]
+      
+      bibitem_idx <- which(grepl("^\\\\bibitem", ref_lines))
+      
+      if (length(bibitem_idx) == 0) {
+        return(invisible(NULL))
+      }
+      
+      items <- list()
+      for (i in seq_along(bibitem_idx)) {
+        start <- bibitem_idx[i]
+        end <- if (i < length(bibitem_idx)) bibitem_idx[i + 1] - 1 else length(ref_lines)
+        item_text <- paste(ref_lines[start:end], collapse = "\n")
+        items[[i]] <- item_text
+      }
+      
+      chinese <- c()
+      english <- c()
+      
+      for (item in items) {
+        if (grepl("[\u4e00-\u9fff]", item)) {
+          chinese <- c(chinese, item)
+        } else {
+          english <- c(english, item)
+        }
+      }
+      
+      if (length(chinese) > 0) {
+        # Pinyin initial mapping for common Chinese surnames
+        pinyin_map <- list(
+          "\u80e1" = "H", "\u5415" = "L", "\u738b" = "W", "\u5f20" = "Z",
+          "\u674e" = "L", "\u5218" = "L", "\u9648" = "C", "\u6768" = "Y",
+          "\u9ec4" = "H", "\u8d75" = "Z", "\u5434" = "W", "\u5468" = "Z",
+          "\u5f90" = "X", "\u5b59" = "S", "\u9a6c" = "M", "\u6731" = "Z",
+          "\u80e1" = "H", "\u90ed" = "G", "\u4f55" = "H", "\u9ad8" = "G",
+          "\u6797" = "L", "\u7f57" = "L", "\u90d1" = "Z", "\u6881" = "L",
+          "\u8c22" = "X", "\u5b8b" = "S", "\u5510" = "T", "\u8bb8" = "X",
+          "\u90b9" = "Z", "\u82cf" = "S", "\u90c6" = "Z", "\u5411" = "X"
+        )
+        
+        get_sort_key <- function(item) {
+          match <- regmatches(item, regexpr("[\u4e00-\u9fff]", item, perl = TRUE))
+          if (length(match) > 0 && nchar(match[1]) > 0) {
+            char <- match[1]
+            if (char %in% names(pinyin_map)) {
+              return(pinyin_map[[char]])
+            }
+            return(char)
+          }
+          return("")
+        }
+        
+        sort_keys <- sapply(chinese, get_sort_key)
+        chinese <- chinese[order(sort_keys)]
+        # Replace , \& with , for Chinese references
+        chinese <- gsub(", \\&", ",", chinese, fixed = TRUE)
+      }
+      
+      all_items <- c(chinese, english)
+      new_ref_lines <- unlist(strsplit(paste(all_items, collapse = "\n\n"), "\n"))
+      
+      new_lines <- c(before, new_ref_lines, after)
+      writeLines(new_lines, tex_file, useBytes = FALSE)
+    }
+    
+    reorder_references(output_file)
+
     if(isTRUE(metadata$doi_citations)) {
       rmdfiltr::post_process_doi_citations(input_file, metadata$bibliography)
     }
