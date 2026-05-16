@@ -87,6 +87,20 @@
 \def\def@donotrepeattitle{}
 \makeatother
 
+% 修改 author note 格式："注："后直接加文字，不要换行居中
+\makeatletter
+\patchcmd{\maketitle}
+  {\begin{center}%
+            \acksname%
+         \end{center}}
+  {\noindent\textbf{\acksname：}\ignorespaces}
+  {}{\typeout{Failed to patch author note title.}}
+\patchcmd{\maketitle}
+  {\indent\par\@acks}
+  {\@acks}
+  {}{\typeout{Failed to patch author note content.}}
+\makeatother
+
 % ============================================
 % 双语支持配置 (papaja-zh)
 % ============================================

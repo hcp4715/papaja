@@ -294,7 +294,12 @@ local function make_latex_envir(name, metadata)
   local data = {table.unpack(metadata)}
   local pandoc_type = data[1].t
 
-  if pandoc_type == "Para" or pandoc_type == "Plain" or pandoc_type == "RawBlock" or pandoc_type == "LineBlock" then
+  if pandoc_type == "Para" or pandoc_type == "Plain" then
+    -- 将命令包装直接嵌入到第一个和最后一个 block 中，避免产生空行
+    table.insert(data[1].content, 1, pandoc.RawInline("latex", "\\" .. name .. "{"))
+    table.insert(data[#data].content, pandoc.RawInline("latex", "}"))
+    return List:new(data)
+  elseif pandoc_type == "RawBlock" or pandoc_type == "LineBlock" then
     local envir = List:new{pandoc.Para(pandoc.RawInline("latex", "\\" .. name .. "{"))}
     envir:extend(data)
     envir:extend(List:new{pandoc.Para(pandoc.RawInline("latex", "}"))})
