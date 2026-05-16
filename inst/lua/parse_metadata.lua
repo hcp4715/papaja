@@ -370,6 +370,9 @@ function Pandoc (document)
     blocks:extend(make_latex_envir("authornote", meta.authornote))
   end
 
+  -- 保存原始affiliation数据，用于后续双语支持（会被create_affiliation_inlines覆盖）
+  local raw_affiliations = meta.affiliation
+
   if meta.affiliation ~= nil then
     local affiliations = create_affiliation_inlines(meta.affiliation)
     if #affiliations > 0 then
@@ -397,6 +400,39 @@ function Pandoc (document)
     if meta.title_en and meta.title_en[1] then
       blocks:extend(make_latex_envir("titleen", meta.title_en))
     end
+
+    -- 英文作者信息
+    if meta.author ~= nil then
+      local en_authors = List:new{}
+      for i, author in ipairs(meta.author) do
+        if author.name_en and author.name_en[1] then
+          if #en_authors > 0 then
+            en_authors:extend(List:new{pandoc.Str", ", pandoc.Space()})
+          end
+          en_authors:extend(author.name_en)
+        end
+      end
+      if #en_authors > 0 then
+        blocks:extend(make_latex_envir("authoren", pandoc.MetaInlines(en_authors)))
+      end
+    end
+
+    -- 英文机构信息（使用原始raw_affiliations，因为meta.affiliation已被覆盖）
+    if raw_affiliations ~= nil then
+      local en_affils = List:new{}
+      for i, affil in ipairs(raw_affiliations) do
+        if affil.institution_en and affil.institution_en[1] then
+          if #en_affils > 0 then
+            en_affils:extend(List:new{pandoc.RawInline("latex", "\\\\")})
+          end
+          en_affils:extend(affil.institution_en)
+        end
+      end
+      if #en_affils > 0 then
+        blocks:extend(make_latex_envir("affiliationen", pandoc.MetaInlines(en_affils)))
+      end
+    end
+
     blocks:extend(make_latex_envir("abstracten", meta.abstract_en))
     if meta.keywords_en and meta.keywords_en[1] then
       blocks:extend(make_latex_envir("keywordsen", pandoc.MetaBlocks(List:new{

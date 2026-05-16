@@ -77,10 +77,15 @@
   \renewcommand{\abstractname}{摘要}
   \renewcommand{\keywordname}{关键词}
   \renewcommand{\rheadname}{短标题}
-  \renewcommand{\acksname}{作者简介}
+  \renewcommand{\acksname}{注}
   \renewcommand{\figurename}{图}
   \renewcommand{\tablename}{表}
 }
+
+% 阻止 APA6 man 模式下摘要后重复显示标题（消除空白页）
+\makeatletter
+\def\def@donotrepeattitle{}
+\makeatother
 
 % ============================================
 % 双语支持配置 (papaja-zh)
@@ -89,11 +94,15 @@
 % 定义存储英文内容的宏
 \makeatletter
 \newcommand{\@titleen}{}
+\newcommand{\@authoren}{}
+\newcommand{\@affiliationen}{}
 \newcommand{\@abstracten}{}
 \newcommand{\@keywordsen}{}
 
 % 提供用户可调用的设置命令
 \newcommand{\titleen}[1]{\gdef\@titleen{#1}}
+\newcommand{\authoren}[1]{\gdef\@authoren{#1}}
+\newcommand{\affiliationen}[1]{\gdef\@affiliationen{#1}}
 \newcommand{\abstracten}[1]{\gdef\@abstracten{#1}}
 \newcommand{\keywordsen}[1]{\gdef\@keywordsen{#1}}
 \makeatother
@@ -112,7 +121,21 @@
       \begin{center}%
         \textbf{\@titleen}%
       \end{center}%
-      \vspace{0.5cm}%
+      \vspace{0.25cm}%
+    \fi%
+    % 英文作者（如有）
+    \ifx\@authoren\@empty\else%
+      \begin{center}%
+        \@authoren%
+      \end{center}%
+      \vspace{0.1cm}%
+    \fi%
+    % 英文机构（如有）
+    \ifx\@affiliationen\@empty\else%
+      \begin{center}%
+        \@affiliationen%
+      \end{center}%
+      \vspace{0.25cm}%
     \fi%
     % 英文摘要
     {\section*{\normalfont\normalsize Abstract}}%
@@ -123,6 +146,7 @@
     \ifx\@keywordsen\@empty\else%
       \indent\textit{Keywords:} \@keywordsen%
     \fi%
+    \newpage%
   \fi%
 }
 \makeatother
